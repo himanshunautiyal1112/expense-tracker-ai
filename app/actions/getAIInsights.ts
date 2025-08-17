@@ -1,12 +1,15 @@
 'use server';
 
-import { checkUser } from '@/lib/checkUser';
 import { db } from '@/lib/db';
 import { generateExpenseInsights, AIInsight, ExpenseRecord } from '@/lib/ai';
+import { auth } from '@clerk/nextjs/server';
 
 export async function getAIInsights(): Promise<AIInsight[]> {
   try {
-    const user = await checkUser();
+    const { userId } = await auth();
+    const user = await db.user.findUnique({
+        where: { clerckId: userId || ""},
+    })
     if (!user) {
       throw new Error('User not authenticated');
     }
@@ -17,7 +20,7 @@ export async function getAIInsights(): Promise<AIInsight[]> {
 
     const expenses = await db.record.findMany({
       where: {
-        userId: user.clerckId,
+        userId: user.id,
         createdAt: {
           gte: thirtyDaysAgo,
         },
